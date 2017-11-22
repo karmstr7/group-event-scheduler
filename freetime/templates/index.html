@@ -1,0 +1,203 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html lang="en">
+<head>
+    <title>Appointments</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" type="text/css"
+          href="//cdn.jsdelivr.net/bootstrap/latest/css/bootstrap.css"
+    />
+
+
+    <link rel="stylesheet" type="text/css"
+          href="/static/css/busy.css"
+    />
+
+    <!-- jquery from a content distribution network; probably cached -->
+    <script type="text/javascript"
+            src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js">
+    </script>
+
+    <!-- Ideally the rest of our javascript dependencies would be
+         bundled and minified with 'browserify', but I've found that
+         it difficult to handle browserify dependencies for class
+         projects.  So, we'll pick up moment and a date range picker
+         from CDNs instead.
+    -->
+
+    <script type="text/javascript" src="//cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+
+    <script type="text/javascript" src="//cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.js"></script>
+    <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.css"/>
+</head>
+
+<body>
+<div class="container">
+
+    <h1>Busy times</h1>
+
+    <!--
+      -- If there are any warnings or other messages from a prior action,
+      -- they appear above the rest of the content, just until the next
+      -- action.
+      -->
+    {%  if session.begin_datetime is defined %}
+        <input type="text" name="session_begin_datetime" id="session_begin_datetime"
+               value="{{ session.begin_datetime }}" style="width: 50%; display: block;" readonly>
+    {% endif %}
+    {% if session.end_datetime is defined %}
+        <input type="text" name="session_end_datetime" id="session_end_datetime"
+               value="{{ session.end_datetime }}" style="width: 50%; display: block;" readonly>
+    {% endif %}
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul class=flashes>
+                {% for message in messages %}
+                    <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
+    <h2>Date and Time Range</h2>
+    <div class="container">
+        <div class="col-md-6">
+            <label>Begins at</label>
+            <input type=date name="begin_date" id="begin_date" value="2017-09-01"/>
+            <input type=time name="begin_time" id="begin_time" value="08:00"/>
+        </div>
+        <div class="col-md-6">
+            <label>Ends at</label>
+            <input type=date name="end_date" id="end_date" value="2017-11-01"/>
+            <input type=time name="end_time" id="end_time" value="13:00"/>
+        </div>
+        <button type="submit" id="datetimes_button">Confirm the Datetimes</button>
+    </div>
+    <!--
+    Show the calendar list (if we have it).  This will need to be turned into
+    a form from which calendars can be picked. Up to three entries are
+    shown in each row (but the order is across then down; I would
+    prefer down then across). 
+    -->
+    {% if g.calendars is defined %}
+        <button type="submit" id="good_calendars">Confirm Calendars</button>
+
+        <div class="row">
+            {% for cal in g.calendars if cal.selected %}
+                <div class="col-md-4">
+            <span class="input-group-addon">
+                <input name="select-calendar" type="checkbox" value="{{ cal }}">
+            </span>
+                    {{ cal.summary }}
+                </div>
+                {% if loop.index is divisibleby 3 %}
+                    </div>
+                    <div class="row">
+                {% endif %}
+            {% endfor %}
+            </div>
+    {% endif %}
+
+    <div id="events">
+    </div>
+
+
+</div>  <!-- container (for bootstrap) -->
+<script type="text/javascript">
+    let SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+    let SELECT_URL = SCRIPT_ROOT + "/select";
+    let SET_RANGE_URL = SCRIPT_ROOT + "/set_range";
+
+    let checked_set = new Set([]);
+    $(".col-md-4 :checkbox").change(
+        function () {
+            if (this.checked) {
+                checked_set.add($(this).val());
+            } else {
+                checked_set.delete($(this).val());
+            }
+        });
+
+    $("#good_calendars").click(function (event) {
+        event.preventDefault();
+        if (checked_set.size === 0) {
+            return
+        }
+        let set_to_list = [];
+        for (let it = checked_set.values(), val = null; val = it.next().value;) {
+            set_to_list.push(val);
+        }
+        $.ajax({
+            url: SELECT_URL,
+            data: {calendars: JSON.stringify(set_to_list)},
+            success: function (data) {
+                let $table = $('<table>');
+                let $tr1 = $('<tr>');
+                let $tr2 = $('<tr>');
+                let $tr3 = $('<tr>');
+                let $tr4 = $('<tr>');
+                $.each(data.result, function (i, array) {
+                    let $th = $('<th>');
+                    let $td = $('<td>');
+                    $tr1.append(
+                        $('<th>').text(array[0])
+                    );
+                    $tr2.append(
+                        $('<td>').text(array[1])
+                    );
+                    let date1 = new Date(array[2]);
+                    $tr3.append(
+                        $('<td>').text(date1.toString())
+                    );
+                    let date2 = new Date(array[3]);
+                    $tr4.append(
+                        $('<td>').text(date2.toString())
+                    );
+                });
+                $table.append(
+                    $tr1,
+                    $tr2,
+                    $tr3,
+                    $tr4
+                );
+                $("#events").append($table);
+            }
+        })
+    });
+
+    $("#datetimes_button").click(function (event) {
+        event.preventDefault();
+        try {
+            let begin_datetime = new Date($('#begin_date').val() + " " + $('#begin_time').val()).toISOString();
+            let end_datetime = new Date($('#end_date').val() + " " + $('#end_time').val()).toISOString();
+            $.ajax({
+                url: SET_RANGE_URL,
+                data: {begin_datetime: begin_datetime, end_datetime: end_datetime},
+                success: function (data) {
+                    if (data.redirect) {
+                        window.location.replace(data.redirect)
+                    } else {
+                        alert("Server failed to deliver redirect url to Ajax call.")
+                    }
+                }
+            })
+        }
+        catch (err) {
+            alert(err);
+        }
+    });
+
+    if ($('#session_begin_datetime').length) {
+        $val = $('#session_begin_datetime').val();
+        let local = new Date($val);
+        $('#session_begin_datetime').val(local);
+    }
+
+    if ($('#session_end_datetime').length) {
+        $val = $('#session_end_datetime').val();
+        let local = new Date($val);
+        $('#session_end_datetime').val(local);
+    }
+</script>
+</body>
+</html>
