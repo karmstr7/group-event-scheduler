@@ -1,5 +1,5 @@
 #
-#  Project 7: Pull Google calendar events 
+#  Project 8: Calculate available time using Google Calendars
 
 ##############
 #  Virtual environment
