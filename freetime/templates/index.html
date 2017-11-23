@@ -33,22 +33,12 @@
 
 <body>
 <div class="container">
-
-    <h1>Busy times</h1>
-
     <!--
       -- If there are any warnings or other messages from a prior action,
       -- they appear above the rest of the content, just until the next
       -- action.
       -->
-    {%  if session.begin_datetime is defined %}
-        <input type="text" name="session_begin_datetime" id="session_begin_datetime"
-               value="{{ session.begin_datetime }}" style="width: 50%; display: block;" readonly>
-    {% endif %}
-    {% if session.end_datetime is defined %}
-        <input type="text" name="session_end_datetime" id="session_end_datetime"
-               value="{{ session.end_datetime }}" style="width: 50%; display: block;" readonly>
-    {% endif %}
+     <button type="submit" id="restart_button">Click here to restart</button>
     {% with messages = get_flashed_messages() %}
         {% if messages %}
             <ul class=flashes>
@@ -63,12 +53,12 @@
     <div class="container">
         <div class="col-md-6">
             <label>Begins at</label>
-            <input type=date name="begin_date" id="begin_date" value="2017-09-01"/>
+            <input type=date name="begin_date" id="begin_date" value="2017-11-25"/>
             <input type=time name="begin_time" id="begin_time" value="08:00"/>
         </div>
         <div class="col-md-6">
             <label>Ends at</label>
-            <input type=date name="end_date" id="end_date" value="2017-11-01"/>
+            <input type=date name="end_date" id="end_date" value="2017-11-29"/>
             <input type=time name="end_time" id="end_time" value="13:00"/>
         </div>
         <button type="submit" id="datetimes_button">Confirm the Datetimes</button>
@@ -98,7 +88,7 @@
             </div>
     {% endif %}
 
-    <div id="events">
+    <div class=scroll id="events">
     </div>
 
 
@@ -131,35 +121,57 @@
             url: SELECT_URL,
             data: {calendars: JSON.stringify(set_to_list)},
             success: function (data) {
+                let start_t = data.bounds[0];
+                let end_t = data.bounds[1];
                 let $table = $('<table>');
-                let $tr1 = $('<tr>');
-                let $tr2 = $('<tr>');
-                let $tr3 = $('<tr>');
-                let $tr4 = $('<tr>');
-                $.each(data.result, function (i, array) {
-                    let $th = $('<th>');
-                    let $td = $('<td>');
-                    $tr1.append(
-                        $('<th>').text(array[0])
-                    );
-                    $tr2.append(
-                        $('<td>').text(array[1])
-                    );
-                    let date1 = new Date(array[2]);
-                    $tr3.append(
-                        $('<td>').text(date1.toString())
-                    );
-                    let date2 = new Date(array[3]);
-                    $tr4.append(
-                        $('<td>').text(date2.toString())
-                    );
-                });
-                $table.append(
-                    $tr1,
-                    $tr2,
-                    $tr3,
-                    $tr4
-                );
+                for (let i = 0; i < data.blocks.length; i++){
+                    for (let key in data.blocks[i]) {
+                        if (data.blocks[i].hasOwnProperty(key)){
+                            if (i === 0){
+                                let begin = moment(key + " " + start_t);
+                                start_t = begin.format('HH:mm');
+                                let end = moment(key + " " + end_t);
+                                end_t = end.format('HH:mm');
+                            }
+                            let $tr = $('<tr class="day">');
+                            $tr.append(
+                                $('<th>').text("<" + key + ">: ")
+                            );
+                            $tr.append(
+                                $('<th>').text(start_t),
+                                $('<th>').text("--")
+
+                            );
+                            let events = Object.values(data.blocks[i]);
+                            for (let n = 0; n < events.length; n++){
+                                console.log("For i=" + i + " " + "events: ");
+                                for (let m = 0; m < events[n].length; m++){
+                                    let e_summary = null;
+                                    let e_start = null;
+                                    let e_end = null;
+                                    for (let p = 0; p < events[n][m].length; p++){
+                                        if ("summary" in events[n][m][p]){
+                                            e_summary = events[n][m][p]['summary']
+                                        }else if ("start" in events[n][m][p]){
+                                            e_start = moment(events[n][m][p]['start']['dateTime']).format("hh:mm");
+                                        }else if ("end" in events[n][m][p]){
+                                            e_end = moment(events[n][m][p]['end']['dateTime']).format("hh:mm");
+                                        }
+                                    }
+                                    if (e_start){
+                                        $tr.append(
+                                            $('<th>').text($.trim("--" + e_start + "[" + "(busy)" + e_summary + "]" + e_end + "--"))
+                                        )
+                                    }
+                                }
+                            }
+                            $tr.append(
+                                $('<th>').text(end_t)
+                            );
+                            $table.append($tr);
+                        }
+                    }
+                }
                 $("#events").append($table);
             }
         })
@@ -168,11 +180,16 @@
     $("#datetimes_button").click(function (event) {
         event.preventDefault();
         try {
-            let begin_datetime = new Date($('#begin_date').val() + " " + $('#begin_time').val()).toISOString();
-            let end_datetime = new Date($('#end_date').val() + " " + $('#end_time').val()).toISOString();
+            let begin_datetime = moment($('#begin_date').val() + " " + $('#begin_time').val()).local();
+            let end_datetime = moment($('#end_date').val() + " " + $('#end_time').val()).local();
+            let time_diff = end_datetime.diff(begin_datetime, 'minutes');
+            if (time_diff < 15) {
+              alert("Time difference must be at minimum 15 minutes.");
+              return
+            }
             $.ajax({
                 url: SET_RANGE_URL,
-                data: {begin_datetime: begin_datetime, end_datetime: end_datetime},
+                data: {begin_datetime: begin_datetime.format(), end_datetime: end_datetime.format()},
                 success: function (data) {
                     if (data.redirect) {
                         window.location.replace(data.redirect)
@@ -187,17 +204,10 @@
         }
     });
 
-    if ($('#session_begin_datetime').length) {
-        $val = $('#session_begin_datetime').val();
-        let local = new Date($val);
-        $('#session_begin_datetime').val(local);
-    }
-
-    if ($('#session_end_datetime').length) {
-        $val = $('#session_end_datetime').val();
-        let local = new Date($val);
-        $('#session_end_datetime').val(local);
-    }
+    $("#restart_button").click(function (event) {
+        event.preventDefault();
+        location.reload(true);
+    })
 </script>
 </body>
 </html>

@@ -2,10 +2,11 @@ import flask
 from flask import render_template
 from flask import request
 
-from calc_busy import get_busy_events
-from _functools import reduce
 import ast
 import logging
+
+# Freetime module
+from calc_freetime import get_available_times
 
 # Date handling 
 import arrow  # Replacement for datetime, based on moment.js
@@ -259,14 +260,17 @@ def select():
     """
     app.logger.debug("ENTERING SELECT")
     calendars = request.args.get('calendars', type=str)
+    print("calendars: {}".format(calendars))
     credentials = valid_credentials()
     if not credentials:
         app.logger.debug("Redirecting to authorization")
         return flask.redirect(flask.url_for('oauth2callback'))
     gcal_service = get_gcal_service(credentials)
     got_events = get_events(calendars, gcal_service)
-    cal_busy = get_busy_events(got_events, flask.session['begin_datetime'], flask.session['end_datetime'])
-    return flask.jsonify(result=cal_busy)
+    bounds, blocks = get_available_times(got_events,
+                                         flask.session['begin_datetime'],
+                                         flask.session['end_datetime'])
+    return flask.jsonify(bounds=bounds, blocks=blocks)
 
 
 #################
@@ -284,45 +288,26 @@ def get_events(calendars, service):
     :return: A list of tuples containing useful information about the calendars' events.
     """
     app.logger.debug("Entering get_events")
+    time_min = arrow.get(flask.session['begin_datetime'])
+    time_max = arrow.get(flask.session['end_datetime']).shift(days=+1)
     event_list = []
     calendars = ast.literal_eval(calendars)
-    for calendar in calendars:
+
+    for calendar in calendars:  # Per calendar
         calendar = ast.literal_eval(calendar)
-        calendar_events = service.events().list(calendarId=calendar['id'], singleEvents=True).execute()['items']
+        calendar_events = service.events().list(calendarId=calendar['id'],
+                                                singleEvents=True,
+                                                timeMin=time_min,
+                                                timeMax=time_max,
+                                                orderBy='startTime').execute()['items']
         for calendar_event in calendar_events:
             if 'transparency' in calendar_event and calendar_event['transparency'] is "transparent":
                 continue
             event_list.append(({"calendar": calendar['id']},
                                {"summary": calendar_event['summary']},
                                {"start": calendar_event['start']},
-                               {"end": calendar_event['end']},
-                               {"recurrence": reduce(lambda d, key: d.get(key) if d else None,
-                                                     ['recurrence'],
-                                                     calendar_event)}))
-    for event in event_list:
-        for attribute in event:
-            if 'start' in attribute:
-                try:
-                    attribute['start']['dateTime'] = convert_to_utc(attribute['start']['dateTime'])
-                    attribute['start']['timeZone'] = 'UTC'
-                except KeyError:
-                    continue
-            if 'end' in attribute:
-                try:
-                    attribute['end']['dateTime'] = convert_to_utc(attribute['end']['dateTime'])
-                    attribute['end']['timeZone'] = 'UTC'
-                except KeyError:
-                    continue
+                               {"end": calendar_event['end']}))
     return event_list
-
-
-def convert_to_utc(tz_time):
-    """
-    :param tz_time: A dictionary object containing the start or end time of the event,
-                    the time is an ISO string with timezone attached.
-    :return:    An ISO-8601 string of time in UTC.
-    """
-    return str(arrow.get(tz_time).to('UTC'))
 
 
 if __name__ == "__main__":
