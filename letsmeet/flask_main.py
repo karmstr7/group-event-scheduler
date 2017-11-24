@@ -2,8 +2,11 @@ import flask
 from flask import render_template
 from flask import request
 
+# converts a variable to intended type
 import ast
+
 import logging
+import sys
 
 # Freetime module
 from calc_freetime import get_available_times
@@ -19,6 +22,9 @@ import httplib2  # used in oauth2 flow
 # Google API for services 
 from apiclient import discovery
 
+# Mongo for database
+from pymongo import MongoClient
+
 ###
 # Globals
 ###
@@ -29,10 +35,32 @@ if __name__ == "__main__":
 else:
     CONFIG = config.configuration(proxied=True)
 
+MONGO_CLIENT_URL = "mongodb://{}:{}@{}:{}/{}".format(
+    CONFIG.DB_USER,
+    CONFIG.DB_USER_PW,
+    CONFIG.DB_HOST,
+    CONFIG.DB_PORT,
+    CONFIG.DB)
+
+print("Using URL '{}'".format(MONGO_CLIENT_URL))
+
 app = flask.Flask(__name__)
 app.debug = CONFIG.DEBUG
 app.logger.setLevel(logging.DEBUG)
 app.secret_key = CONFIG.SECRET_KEY
+
+####
+# Database connection per server process
+###
+
+try:
+    dbclient = MongoClient(MONGO_CLIENT_URL)
+    db = getattr(dbclient, CONFIG.DB)
+    collection = db.dated
+
+except:
+    print("Failure opening database.  Is Mongo running? Correct password?")
+    sys.exit(1)
 
 SCOPES = 'https://www.googleapis.com/auth/calendar.readonly'
 CLIENT_SECRET_FILE = CONFIG.GOOGLE_KEY_FILE  # You'll need this

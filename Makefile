@@ -1,5 +1,5 @@
 #
-#  Project 8: Calculate available time using Google Calendars
+#  Project 10: A Let's Meet App
 
 ##############
 #  Virtual environment
