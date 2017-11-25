@@ -1,9 +1,11 @@
 import flask
+from flask import g
 from flask import render_template
 from flask import request
 
 # converts a variable to intended type
 import ast
+import uuid
 
 import logging
 import sys
@@ -56,7 +58,7 @@ app.secret_key = CONFIG.SECRET_KEY
 try:
     dbclient = MongoClient(MONGO_CLIENT_URL)
     db = getattr(dbclient, CONFIG.DB)
-    collection = db.dated
+    collection = db.schedules
 
 except:
     print("Failure opening database.  Is Mongo running? Correct password?")
@@ -91,12 +93,26 @@ def choose():
     if not credentials:
         app.logger.debug("Redirecting to authorization")
         return flask.redirect(flask.url_for('oauth2callback'))
-
     gcal_service = get_gcal_service(credentials)
     app.logger.debug("Returned from get_gcal_service")
     flask.g.calendars = list_calendars(gcal_service)
-    return render_template('index.html')
+    return render_template('index.html', jump="#calendar_box")
 
+
+@app.route("/schedule/token=<token>")
+def schedule(token):
+    app.logger.debug("Rendering schedule(s)")
+    g.schedule_exists = False
+    g.bounds = None
+    g.blocks = None
+    for record in collection.find({"type": "schedule_options"}):
+        if record['token'] == token:
+            g.bounds = record['bounds']
+            g.blocks = record['blocks']
+    if g.bounds and g.blocks:
+        g.schedule_exists = True
+    # TODO: Give creator the token code
+    return render_template('schedule.html')
 
 ####
 #
@@ -204,6 +220,7 @@ def oauth2callback():
         app.logger.debug("Got credentials")
         return flask.redirect(flask.url_for('choose'))
 
+
 ####
 #
 #  Functions (NOT pages) that return some information
@@ -298,7 +315,13 @@ def select():
     bounds, blocks = get_available_times(got_events,
                                          flask.session['begin_datetime'],
                                          flask.session['end_datetime'])
-    return flask.jsonify(bounds=bounds, blocks=blocks)
+    # TODO: Catch bad bounds, blocks, before write to database
+    # TODO: need to check if new schedule or appending to an existing
+    # TODO: pass the variable in the redirect
+    token = make_token()
+    app.logger.debug("bounds: {} schedules: {}".format(bounds, blocks))
+    collection.insert_one({'type': 'schedule_options', 'token': token, 'bounds': bounds, 'blocks': blocks})
+    return flask.jsonify(redirect="/schedule/token=", token=token)
 
 
 #################
@@ -336,6 +359,28 @@ def get_events(calendars, service):
                                {"start": calendar_event['start']},
                                {"end": calendar_event['end']}))
     return event_list
+
+
+@app.template_filter('strip_date')
+def strip_date(date):
+    """
+    Takes a date object and returns a string representation of the time
+    in the object.
+    """
+    try:
+        d = arrow.get(date).format("HH:mm")
+    except:
+        d = date
+    return d
+
+
+def make_token():
+    """
+    Create a (pseudo)random string UUID object using UUID.
+    :return: An UUID object that's been converted to type string.
+    """
+    token = str(uuid.uuid4())
+    return token
 
 
 if __name__ == "__main__":

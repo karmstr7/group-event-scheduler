@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<p>Fancy seeing you here!</p>
+<h1>Event Name Goes Here</h1>
+{% if g.schedule_exists %}
+    <table>
+        {% for i in g.blocks %}
+            {% for key, value in i.items() %}
+                <tr>
+                    <th>{{ key }}</th>
+                    <td>{{ g.bounds[0] }}</td>
+                    {% for j in value %}
+                        {% for k in j %}
+                            {% for key2, value2 in k.items() %}
+                                {% if key2 == "start" %}
+                                    {% set start = value2['dateTime'] %}
+                                {% endif %}
+                                {% if key2 == "summary" %}
+                                    {% set summary = value2 %}
+                                {% endif %}
+                                {% if key2 == "end" %}
+                                    {% set end = value2['dateTime'] %}
+                                {% endif %}
+                                <td>{{ start | strip_date }}</td>
+                                <td>{{ summary }}</td>
+                                <td>{{ end | strip_date}}</td>
+                            {% endfor %}
+                        {% endfor %}
+                    {% endfor %}
+                    <td>{{ g.bounds[1] }}</td>
+                </tr>
+            {% endfor %}
+        {% endfor %}
+    </table>
+{% else %}
+    <p>Opps the page doesn't exist.</p>
+{% endif %}
+
+<script async>
+    {#    let getUrlParameter = function getUrlParameter(sParam) {#}
+    {#        let sPageURL = decodeURIComponent(window.location.search.substring(1)),#}
+    {#            sURLVariables = sPageURL.split('&'),#}
+    {#            sParameterName,#}
+    {#            i;#}
+    {##}
+    {#        for (i = 0; i < sURLVariables.length; i++) {#}
+    {#            sParameterName = sURLVariables[i].split('=');#}
+    {##}
+    {#            if (sParameterName[0] === sParam) {#}
+    {#                return sParameterName[1] === undefined ? true : sParameterName[1];#}
+    {#            }#}
+    {#        }#}
+    {#    };#}
+    {#    let start_t = data.bounds[0];#}
+    {#    let end_t = data.bounds[1];#}
+    {#    let $table = $('<table>');#}
+    {#    for (let i = 0; i < data.blocks.length; i++) {#}
+    {#        for (let key in data.blocks[i]) {#}
+    {#            if (data.blocks[i].hasOwnProperty(key)) {#}
+    {#                if (i === 0) {#}
+    {#                    let begin = moment(key + " " + start_t);#}
+    {#                    start_t = begin.format('HH:mm');#}
+    {#                    let end = moment(key + " " + end_t);#}
+    {#                    end_t = end.format('HH:mm');#}
+    {#                }#}
+    {#                let $tr = $('<tr class="day">');#}
+    {#                $tr.append(#}
+    {#                    $('<th>').text("<" + key + ">: ")#}
+    {#                );#}
+    {#                $tr.append(#}
+    {#                    $('<th>').text(start_t),#}
+    {#                    $('<th>').text("--")#}
+    {#                );#}
+    {#                let events = Object.values(data.blocks[i]);#}
+    {#                for (let n = 0; n < events.length; n++) {#}
+    {#                    console.log("For i=" + i + " " + "events: ");#}
+    {#                    for (let m = 0; m < events[n].length; m++) {#}
+    {#                        let e_summary = null;#}
+    {#                        let e_start = null;#}
+    {#                        let e_end = null;#}
+    {#                        for (let p = 0; p < events[n][m].length; p++) {#}
+    {#                            if ("summary" in events[n][m][p]) {#}
+    {#                                e_summary = events[n][m][p]['summary']#}
+    {#                            } else if ("start" in events[n][m][p]) {#}
+    {#                                e_start = moment(events[n][m][p]['start']['dateTime']).format("hh:mm");#}
+    {#                            } else if ("end" in events[n][m][p]) {#}
+    {#                                e_end = moment(events[n][m][p]['end']['dateTime']).format("hh:mm");#}
+    {#                            }#}
+    {#                        }#}
+    {#                        if (e_start) {#}
+    {#                            $tr.append(#}
+    {#                                $('<th>').text($.trim("--" + e_start + "[" + "(busy)" + e_summary + "]" + e_end + "--"))#}
+    {#                            )#}
+    {#                        }#}
+    {#                    }#}
+    {#                }#}
+    {#                $tr.append(#}
+    {#                    $('<th>').text(end_t)#}
+    {#                );#}
+    {#                $table.append($tr);#}
+    {#            }#}
+    {#        }#}
+    {#    }#}
+    {#    $("#events").append($table);#}
+</script>
+</body>
+</html>

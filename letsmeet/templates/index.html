@@ -1,102 +1,136 @@
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
 <html lang="en">
 <head>
-    <title>Appointments</title>
+    <title>Let's Meet!</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <link rel="stylesheet" type="text/css"
-          href="//cdn.jsdelivr.net/bootstrap/latest/css/bootstrap.css"
-    />
-
-
     <link rel="stylesheet" type="text/css"
           href="/static/css/busy.css"
     />
-
+    <!--An open source UI framework-->
+    <link rel="stylesheet" type="text/css"
+          href="/static/UI-Button/button.min.css"
+    />
+    <link rel="stylesheet" type="text/css"
+          href="//cdn.jsdelivr.net/bootstrap/latest/css/bootstrap.css"
+    />
     <!-- jquery from a content distribution network; probably cached -->
     <script type="text/javascript"
             src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js">
     </script>
-
-    <!-- Ideally the rest of our javascript dependencies would be
-         bundled and minified with 'browserify', but I've found that
-         it difficult to handle browserify dependencies for class
-         projects.  So, we'll pick up moment and a date range picker
-         from CDNs instead.
-    -->
-
     <script type="text/javascript" src="//cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-
     <script type="text/javascript" src="//cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.js"></script>
     <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.css"/>
 </head>
-
 <body>
-<div class="container">
-    <!--
-      -- If there are any warnings or other messages from a prior action,
-      -- they appear above the rest of the content, just until the next
-      -- action.
-      -->
-     <button type="submit" id="restart_button">Click here to restart</button>
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            <ul class=flashes>
-                {% for message in messages %}
-                    <li>{{ message }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
-    {% endwith %}
-
-    <h2>Date and Time Range</h2>
-    <div class="container">
-        <div class="col-md-6">
-            <label>Begins at</label>
-            <input type=date name="begin_date" id="begin_date" value="2017-11-25"/>
-            <input type=time name="begin_time" id="begin_time" value="08:00"/>
-        </div>
-        <div class="col-md-6">
-            <label>Ends at</label>
-            <input type=date name="end_date" id="end_date" value="2017-11-29"/>
-            <input type=time name="end_time" id="end_time" value="13:00"/>
-        </div>
-        <button type="submit" id="datetimes_button">Confirm the Datetimes</button>
+{% if jump %}
+    <script>
+        window.onload = function () {
+            const jump = "{{ jump }}";
+            console.log("got into here!");
+            console.log(jump);
+            console.log(typeof jump);
+            $("#datetime_box").animate({
+                'opacity': '0'
+            });
+            $(jump).animate({
+                'opacity': '1'
+            });
+            $(jump)[0].scrollIntoView();
+        }
+    </script>
+{% endif %}
+<div id="page1" class="pages">
+    <a id="front"></a>
+    <div class="ui inverted segment" id="center-button-outer">
+        <a href="#page2">
+            <button class="ui inverted blue button" id="center-button-inner">
+                Schedule A New Meeting
+            </button>
+        </a>
     </div>
-    <!--
-    Show the calendar list (if we have it).  This will need to be turned into
-    a form from which calendars can be picked. Up to three entries are
-    shown in each row (but the order is across then down; I would
-    prefer down then across). 
-    -->
-    {% if g.calendars is defined %}
-        <button type="submit" id="good_calendars">Confirm Calendars</button>
-
-        <div class="row">
-            {% for cal in g.calendars if cal.selected %}
-                <div class="col-md-4">
-            <span class="input-group-addon">
+</div>
+<div id="page2" class="pages hideme">
+    <div class="container baseui" id="datetime_box">
+        <table style="margin: 0 auto 30px auto">
+            <tr>
+                <th style="color:white;">Begin and End Date(s)</th>
+            </tr>
+            <tr>
+                <td><input type=date name="begin_date" id="begin_date" value="2017-11-25"/></td>
+                <td><input type=date name="end_date" id="end_date" value="2017-11-29"/></td>
+            </tr>
+            <tr>
+                <th style="color:white;">Begin and End Times</th>
+            </tr>
+            <tr>
+                <td><input type=time name="begin_time" id="begin_time" value="08:00"/></td>
+                <td><input type=time name="end_time" id="end_time" value="13:00"/></td>
+            </tr>
+        </table>
+        <button type="submit" class="positive ui button" id="datetimes_button">Next <i class="arrow right"></i></button>
+    </div>
+    <div class="container baseui" id="calendar_box">
+        {% if g.calendars is defined %}
+            <div class="row" style="margin: 0 auto 30px auto;">
+                {% for cal in g.calendars if cal.selected %}
+                    <div class="col-md-4" style="font-size: 0.75em">
+            <span class="input-group-addon baseui" style="background-color: transparent;">
                 <input name="select-calendar" type="checkbox" value="{{ cal }}">
             </span>
-                    {{ cal.summary }}
-                </div>
-                {% if loop.index is divisibleby 3 %}
+                        {{ cal.summary }}
                     </div>
-                    <div class="row">
-                {% endif %}
-            {% endfor %}
-            </div>
-    {% endif %}
-
-    <div class=scroll id="events">
+                    {% if loop.index is divisibleby 3 %}
+                        </div>
+                        <div class="row">
+                    {% endif %}
+                {% endfor %}
+                </div>
+        {% endif %}
+        <button type="submit" class="positive ui button" id="good_calendars">Next<i class="arrow right"></i></button>
     </div>
 
-
-</div>  <!-- container (for bootstrap) -->
-<script type="text/javascript">
+</div>
+<script>
+    // TODO: Push URLs onto history stack.
     let SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
     let SELECT_URL = SCRIPT_ROOT + "/select";
     let SET_RANGE_URL = SCRIPT_ROOT + "/set_range";
+
+    $(function () {
+        // Every time the front page button is clicked...
+        $('a[href*=#]').on('click', function (e) {
+            e.preventDefault();
+            $(this).animate({
+                'opacity': '1'
+            });
+            $('html, body').animate({scrollTop: $($(this).attr('href')).offset().top}, 1000, 'linear');
+        });
+    });
+
+    // Taken from http://jsfiddle.net/e5qaD/1151/
+    $(document).ready(function () {
+        $(window).on('scroll');
+        let status = [];
+        //Every time the window is scrolled...
+        $(window).scroll(function () {
+            /* Check the location of each desired element */
+            $('.hideme').each(function (i, el) {
+                if (status[i] !== 'showing') { // Makes sure that we haven't already done this item
+                    let bottom_of_object = $(this).position().top + $(this).outerHeight();
+                    let bottom_of_window = $(window).scrollTop() + $(window).height();
+                    /* If the object is completely visible in the window, fade it it */
+                    if (bottom_of_window > bottom_of_object) {
+                        $(this).animate({'opacity': '1'}, 1000);
+                        status[i] = 'showing';
+                        if ($('.hideme').index($(this)) + 1 === $('.hideme').length) {
+                            // We've shown them all, stop listening for scroll events!!!
+                            $(window).off('scroll');
+                        }
+                    }
+                }
+            });
+        });
+    });
 
     let checked_set = new Set([]);
     $(".col-md-4 :checkbox").change(
@@ -121,58 +155,7 @@
             url: SELECT_URL,
             data: {calendars: JSON.stringify(set_to_list)},
             success: function (data) {
-                let start_t = data.bounds[0];
-                let end_t = data.bounds[1];
-                let $table = $('<table>');
-                for (let i = 0; i < data.blocks.length; i++){
-                    for (let key in data.blocks[i]) {
-                        if (data.blocks[i].hasOwnProperty(key)){
-                            if (i === 0){
-                                let begin = moment(key + " " + start_t);
-                                start_t = begin.format('HH:mm');
-                                let end = moment(key + " " + end_t);
-                                end_t = end.format('HH:mm');
-                            }
-                            let $tr = $('<tr class="day">');
-                            $tr.append(
-                                $('<th>').text("<" + key + ">: ")
-                            );
-                            $tr.append(
-                                $('<th>').text(start_t),
-                                $('<th>').text("--")
-
-                            );
-                            let events = Object.values(data.blocks[i]);
-                            for (let n = 0; n < events.length; n++){
-                                console.log("For i=" + i + " " + "events: ");
-                                for (let m = 0; m < events[n].length; m++){
-                                    let e_summary = null;
-                                    let e_start = null;
-                                    let e_end = null;
-                                    for (let p = 0; p < events[n][m].length; p++){
-                                        if ("summary" in events[n][m][p]){
-                                            e_summary = events[n][m][p]['summary']
-                                        }else if ("start" in events[n][m][p]){
-                                            e_start = moment(events[n][m][p]['start']['dateTime']).format("hh:mm");
-                                        }else if ("end" in events[n][m][p]){
-                                            e_end = moment(events[n][m][p]['end']['dateTime']).format("hh:mm");
-                                        }
-                                    }
-                                    if (e_start){
-                                        $tr.append(
-                                            $('<th>').text($.trim("--" + e_start + "[" + "(busy)" + e_summary + "]" + e_end + "--"))
-                                        )
-                                    }
-                                }
-                            }
-                            $tr.append(
-                                $('<th>').text(end_t)
-                            );
-                            $table.append($tr);
-                        }
-                    }
-                }
-                $("#events").append($table);
+                window.location.replace(data.redirect + data.token)
             }
         })
     });
@@ -184,8 +167,8 @@
             let end_datetime = moment($('#end_date').val() + " " + $('#end_time').val()).local();
             let time_diff = end_datetime.diff(begin_datetime, 'minutes');
             if (time_diff < 15) {
-              alert("Time difference must be at minimum 15 minutes.");
-              return
+                alert("Time difference must be at minimum 15 minutes.");
+                return
             }
             $.ajax({
                 url: SET_RANGE_URL,
@@ -193,8 +176,6 @@
                 success: function (data) {
                     if (data.redirect) {
                         window.location.replace(data.redirect)
-                    } else {
-                        alert("Server failed to deliver redirect url to Ajax call.")
                     }
                 }
             })
@@ -203,11 +184,6 @@
             alert(err);
         }
     });
-
-    $("#restart_button").click(function (event) {
-        event.preventDefault();
-        location.reload(true);
-    })
 </script>
 </body>
 </html>
