@@ -1,114 +1,221 @@
-<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Let's Meet!</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css"
-          href="/static/css/busy.css"
+          href="/static/css/stylesheet.css"
     />
-    <!--An open source UI framework-->
-    <link rel="stylesheet" type="text/css"
-          href="/static/UI-Button/button.min.css"
-    />
-    <link rel="stylesheet" type="text/css"
-          href="//cdn.jsdelivr.net/bootstrap/latest/css/bootstrap.css"
-    />
-    <!-- jquery from a content distribution network; probably cached -->
-    <script type="text/javascript"
-            src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js">
+    <script rel="script" type="text/javascript"
+            src="/static/js/moment.min.js">
     </script>
-    <script type="text/javascript" src="//cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-    <script type="text/javascript" src="//cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.js"></script>
-    <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.css"/>
+    <!--An open source UI framework-->
+    <link href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css" rel="stylesheet"
+          type="text/css"/>
+    <link href="https://cdn.rawgit.com/mdehoog/Semantic-UI/6e6d051d47b598ebab05857545f242caf2b4b48c/dist/semantic.min.css"
+          rel="stylesheet" type="text/css"/>
+    <script src="https://code.jquery.com/jquery-2.1.4.js"></script>
+    <script src="https://cdn.rawgit.com/mdehoog/Semantic-UI/6e6d051d47b598ebab05857545f242caf2b4b48c/dist/semantic.min.js"></script>
 </head>
 <body>
 {% if jump %}
     <script>
-        window.onload = function () {
-            const jump = "{{ jump }}";
-            console.log("got into here!");
-            console.log(jump);
-            console.log(typeof jump);
-            $("#datetime_box").animate({
-                'opacity': '0'
+        // scroll to element after authentication completes
+        $(document).ready(function () {
+            $('#form-datetime').fadeOut("slow", function () {
+                $('#form-calendars').fadeIn("slow");
             });
-            $(jump).animate({
-                'opacity': '1'
-            });
-            $(jump)[0].scrollIntoView();
-        }
+            $('html, body').animate({
+                scrollTop: $('#form-calendars').offset().top
+            }, 'slow', 'linear');
+        });
     </script>
 {% endif %}
-<div id="page1" class="pages">
-    <a id="front"></a>
-    <div class="ui inverted segment" id="center-button-outer">
-        <a href="#page2">
-            <button class="ui inverted blue button" id="center-button-inner">
-                Schedule A New Meeting
-            </button>
-        </a>
+<div class="pages page1">
+    <div class="container coversize">
+        <div class="ui inverted segment rear">
+            <a href="#page2">
+                <button class="ui inverted blue button bullseye">
+                    Schedule A New Meeting
+                </button>
+            </a>
+        </div>
     </div>
 </div>
-<div id="page2" class="pages hideme">
-    <div class="container baseui" id="datetime_box">
-        <table style="margin: 0 auto 30px auto">
-            <tr>
-                <th style="color:white;">Begin and End Date(s)</th>
-            </tr>
-            <tr>
-                <td><input type=date name="begin_date" id="begin_date" value="2017-11-25"/></td>
-                <td><input type=date name="end_date" id="end_date" value="2017-11-29"/></td>
-            </tr>
-            <tr>
-                <th style="color:white;">Begin and End Times</th>
-            </tr>
-            <tr>
-                <td><input type=time name="begin_time" id="begin_time" value="08:00"/></td>
-                <td><input type=time name="end_time" id="end_time" value="13:00"/></td>
-            </tr>
-        </table>
-        <button type="submit" class="positive ui button" id="datetimes_button">Next <i class="arrow right"></i></button>
-    </div>
-    <div class="container baseui" id="calendar_box">
-        {% if g.calendars is defined %}
-            <div class="row" style="margin: 0 auto 30px auto;">
-                {% for cal in g.calendars if cal.selected %}
-                    <div class="col-md-4" style="font-size: 0.75em">
+<div class="pages page2 hideme" id="page2">
+    <div class="container coversize">
+        <div class="formbox" id="formele">
+            <div class="form-datetime" id="form-datetime">
+                <h3 style="padding: 10px;">Date Range</h3>
+                <div class="ui form">
+                    <div class="two fields" style="width: 95%; margin: 0 auto">
+                        <div class="field">
+                            <label>Start date</label>
+                            <div class="ui calendar">
+                                <div class="ui input left icon">
+                                    <i class="calendar icon"></i>
+                                    <input type="date" id="rangestartdate" value="2017-11-27">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label>End date</label>
+                            <div class="ui calendar">
+                                <div class="ui input left icon">
+                                    <i class="calendar icon"></i>
+                                    <input type="date" id="rangeenddate" value="2017-11-29">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <h3 style="padding: 10px;">Time Range</h3>
+                <div class="ui form">
+                    <div class="two fields" style="width: 95%; margin: 0 auto">
+                        <div class="field">
+                            <label>Start time</label>
+                            <div class="ui calendar">
+                                <div class="ui input left icon">
+                                    <i class="time icon"></i>
+                                    <input type="time" id="rangestarttime" value="08:00">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label>End time</label>
+                            <div class="ui calendar">
+                                <div class="ui input left icon">
+                                    <i class="time icon"></i>
+                                    <input type="time" id="rangeendtime" value="20:00">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="ui animated button" id="datetime_next"
+                     style="position: absolute; left: 215px; bottom: 25px">
+                    <div class="visible content">Next</div>
+                    <div class="hidden content">
+                        <i class="right arrow icon"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="form-calendars" id="form-calendars">
+                {% if g.calendars is defined %}
+                    <div class="row" style="position: absolute; top: 15px; left: 15px;">
+                        <p>create a new meeting around events in these calendars.</p>
+                        {% for cal in g.calendars if cal.selected %}
+                            <div class="col-md-4" style="font-size: 0.75em">
             <span class="input-group-addon baseui" style="background-color: transparent;">
                 <input name="select-calendar" type="checkbox" value="{{ cal }}">
             </span>
-                        {{ cal.summary }}
-                    </div>
-                    {% if loop.index is divisibleby 3 %}
+                                {{ cal.summary }}
+                            </div>
+                            {% if loop.index is divisibleby 3 %}
+                                </div>
+                                <div class="row">
+                            {% endif %}
+                        {% endfor %}
                         </div>
-                        <div class="row">
-                    {% endif %}
-                {% endfor %}
+                {% endif %}
+                <div class="ui animated button" id="calendars_last"
+                     style="position: absolute; left: 150px; bottom: 25px">
+                    <div class="visible content">Last</div>
+                    <div class="hidden content">
+                        <i class="left arrow icon"></i>
+                    </div>
                 </div>
-        {% endif %}
-        <button type="submit" class="positive ui button" id="good_calendars">Next<i class="arrow right"></i></button>
+                <div class="ui animated button" id="calendars_next"
+                     style="position: absolute; left: 280px; bottom: 25px">
+                    <div class="visible content">Next</div>
+                    <div class="hidden content">
+                        <i class="right arrow icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-
 </div>
 <script>
+    // TODO: Form validations.
+    // TODO: Input for meeting duration.
     // TODO: Push URLs onto history stack.
-    let SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
-    let SELECT_URL = SCRIPT_ROOT + "/select";
-    let SET_RANGE_URL = SCRIPT_ROOT + "/set_range";
-
-    $(function () {
-        // Every time the front page button is clicked...
-        $('a[href*=#]').on('click', function (e) {
-            e.preventDefault();
-            $(this).animate({
-                'opacity': '1'
-            });
-            $('html, body').animate({scrollTop: $($(this).attr('href')).offset().top}, 1000, 'linear');
-        });
-    });
-
-    // Taken from http://jsfiddle.net/e5qaD/1151/
+    // TODO: Update date and time range if user clicks back, check if the values changed.
+    // TODO: Enter code to resume.
+    // TODO: Going back and reselect calendar(s)
+    // TODO: Provide code/URL for coming back and invitees
     $(document).ready(function () {
+        let SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+        let SELECT_URL = SCRIPT_ROOT + "/select";
+        let SET_RANGE_URL = SCRIPT_ROOT + "/set_range";
+        // sends the dates and times to the server and redirect the user to get authenticated.
+        // server uses the dates and times to fetch for contained events.
+        $("#datetime_next").click(function (event) {
+            event.preventDefault();
+            try {
+                let begin_datetime = moment($('#rangestartdate').val() + " " + $('#rangestarttime').val()).local();
+                let end_datetime = moment($('#rangeenddate').val() + " " + $('#rangeendtime').val()).local();
+                console.log(begin_datetime);
+                console.log(end_datetime);
+                let time_diff = end_datetime.diff(begin_datetime, 'minutes');
+                if (time_diff < 15) {
+                    alert("Time difference must be at minimum 15 minutes.");
+                    return
+                }
+                $.ajax({
+                    url: SET_RANGE_URL,
+                    data: {begin_datetime: begin_datetime.format(), end_datetime: end_datetime.format()},
+                    success: function (data) {
+                        if (data.redirect) {
+                            window.location.replace(data.redirect)
+                        }
+                    }
+                })
+            }
+            catch (err) {
+                alert(err);
+            }
+        });
+        // this keeps track of the selected calendars
+        let checked_set = new Set([]);
+        $(".col-md-4 :checkbox").change(
+            function () {
+                if (this.checked) {
+                    checked_set.add($(this).val());
+                } else {
+                    checked_set.delete($(this).val());
+                }
+            });
+        // this sends the selected calendars to the server
+        $("#calendars_next").click(function (event) {
+            event.preventDefault();
+            if (checked_set.size === 0) {
+                return
+            }
+            let set_to_list = [];
+            for (let it = checked_set.values(), val = null; val = it.next().value;) {
+                set_to_list.push(val);
+            }
+            $.ajax({
+                url: SELECT_URL,
+                data: {calendars: JSON.stringify(set_to_list)},
+                success: function (data) {
+                    window.location.replace(data.redirect + data.token)
+                }
+            })
+        });
+        // Jump to form if button is clicked...
+        $(function () {
+            $('a[href*=#]').on('click', function (e) {
+                e.preventDefault();
+                $(this).animate({
+                    'opacity': '1'
+                });
+                $('html, body').animate({scrollTop: $($(this).attr('href')).offset().top}, 1200, 'linear');
+            });
+        });
+        // Taken from http://jsfiddle.net/e5qaD/1151/
         $(window).on('scroll');
         let status = [];
         //Every time the window is scrolled...
@@ -120,7 +227,7 @@
                     let bottom_of_window = $(window).scrollTop() + $(window).height();
                     /* If the object is completely visible in the window, fade it it */
                     if (bottom_of_window > bottom_of_object) {
-                        $(this).animate({'opacity': '1'}, 1000);
+                        $(this).animate({'opacity': '1'}, 1200);
                         status[i] = 'showing';
                         if ($('.hideme').index($(this)) + 1 === $('.hideme').length) {
                             // We've shown them all, stop listening for scroll events!!!
@@ -130,59 +237,22 @@
                 }
             });
         });
-    });
-
-    let checked_set = new Set([]);
-    $(".col-md-4 :checkbox").change(
-        function () {
-            if (this.checked) {
-                checked_set.add($(this).val());
-            } else {
-                checked_set.delete($(this).val());
-            }
-        });
-
-    $("#good_calendars").click(function (event) {
-        event.preventDefault();
-        if (checked_set.size === 0) {
-            return
-        }
-        let set_to_list = [];
-        for (let it = checked_set.values(), val = null; val = it.next().value;) {
-            set_to_list.push(val);
-        }
-        $.ajax({
-            url: SELECT_URL,
-            data: {calendars: JSON.stringify(set_to_list)},
-            success: function (data) {
-                window.location.replace(data.redirect + data.token)
-            }
-        })
-    });
-
-    $("#datetimes_button").click(function (event) {
-        event.preventDefault();
-        try {
-            let begin_datetime = moment($('#begin_date').val() + " " + $('#begin_time').val()).local();
-            let end_datetime = moment($('#end_date').val() + " " + $('#end_time').val()).local();
-            let time_diff = end_datetime.diff(begin_datetime, 'minutes');
-            if (time_diff < 15) {
-                alert("Time difference must be at minimum 15 minutes.");
-                return
-            }
-            $.ajax({
-                url: SET_RANGE_URL,
-                data: {begin_datetime: begin_datetime.format(), end_datetime: end_datetime.format()},
-                success: function (data) {
-                    if (data.redirect) {
-                        window.location.replace(data.redirect)
-                    }
-                }
+        // hides the calendar form when page loads
+        $('#form-calendars').hide();
+        // shows the calendar form when next is clicked inside datetime form
+        $('#datetime_next').click(function (event) {
+            event.preventDefault();
+            $('#form-datetime').fadeOut("slow", function () {
+                $('#form-calendars').fadeIn("slow");
             })
-        }
-        catch (err) {
-            alert(err);
-        }
+        });
+        // shows the datetime form when last is clicked inside calendar form
+        $('#calendars_last').click(function (event) {
+            event.preventDefault();
+            $('#form-calendars').fadeOut("slow", function () {
+                $('#form-datetime').fadeIn("slow");
+            })
+        });
     });
 </script>
 </body>

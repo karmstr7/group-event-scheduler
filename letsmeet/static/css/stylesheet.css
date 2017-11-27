@@ -1,0 +1,56 @@
+.pages {
+    filter: grayscale(0.7);
+}
+
+.coversize {
+    height: 1100px;
+    display: block;
+}
+
+.hideme {
+    opacity: 1;
+}
+
+.page1 {
+    background-image: url("../images/kids-girl-pencil-drawing-159823.jpeg");
+    background-repeat: no-repeat;
+    background-size: cover;
+    height: 1100px;
+}
+
+.ui.inverted.segment.rear {
+    height: 100%;
+    background: transparent;
+    position: relative;
+}
+
+.ui.inverted.blue.button.bullseye {
+    overflow: auto;
+    margin: auto;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    font-size: x-large;
+}
+
+.page2 {
+    background-image: url("../images/healthy-fruits-morning-kitchen.jpg");
+    background-repeat: no-repeat;
+    background-size: cover;
+    height: 1100px;
+}
+
+.formbox {
+    height: 400px;
+    width: 500px;
+    margin: 0 auto;
+    top: 200px;
+    position: relative;
+    background: whitesmoke;
+    border-radius: 0.50em;
+    opacity: 0.95;
+    box-shadow: 1px 1px 5px #555 inset;
+}
