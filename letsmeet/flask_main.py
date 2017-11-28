@@ -27,6 +27,7 @@ from apiclient import discovery
 # Mongo for database
 from pymongo import MongoClient
 
+
 ###
 # Globals
 ###
@@ -99,19 +100,36 @@ def choose():
     return render_template('index.html', jump="#calendar_box")
 
 
+@app.route("/check_code")
+def check_code():
+    session_code = request.args.get('session_code')
+    for record in collection.find({"type": "schedule_options"}):
+        if record['token'] == session_code:
+            return flask.jsonify(result=True, redirect="schedule/token=" + session_code)
+    return flask.jsonify(result=False)
+
+
 @app.route("/schedule/token=<token>")
 def schedule(token):
+    """
+    Generates the schedule page.
+    """
     app.logger.debug("Rendering schedule(s)")
     g.schedule_exists = False
     g.bounds = None
     g.blocks = None
+    g.begin_datetime = None
+    g.end_datetime = None
+    g.token = None
+    g.event_name = None
     for record in collection.find({"type": "schedule_options"}):
         if record['token'] == token:
+            g.schedule_exists = True
             g.bounds = record['bounds']
             g.blocks = record['blocks']
-    if g.bounds and g.blocks:
-        g.schedule_exists = True
-    # TODO: Give creator the token code
+            g.begin_datetime = record['begin_datetime']
+            g.end_datetime = record['end_datetime']
+            g.token = token
     return render_template('schedule.html')
 
 ####
@@ -320,7 +338,12 @@ def select():
     # TODO: pass the variable in the redirect
     token = make_token()
     app.logger.debug("bounds: {} schedules: {}".format(bounds, blocks))
-    collection.insert_one({'type': 'schedule_options', 'token': token, 'bounds': bounds, 'blocks': blocks})
+    collection.insert_one({'type': 'schedule_options',
+                           'token': token,
+                           'bounds': bounds,
+                           'blocks': blocks,
+                           'begin_datetime': flask.session['begin_datetime'],
+                           'end_datetime': flask.session['end_datetime']})
     return flask.jsonify(redirect="/schedule/token=", token=token)
 
 

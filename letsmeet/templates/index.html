@@ -37,9 +37,12 @@
         <div class="ui inverted segment rear">
             <a href="#page2">
                 <button class="ui inverted blue button bullseye">
-                    Schedule A New Meeting
+                    Schedule A Meeting
                 </button>
             </a>
+            <div class="ui input focus" style="top: 575px; display: flex; width: 250px; margin: 0 auto;">
+                <input id="session_code" placeholder="Meeting code here..." type="text">
+            </div>
         </div>
     </div>
 </div>
@@ -55,7 +58,7 @@
                             <div class="ui calendar">
                                 <div class="ui input left icon">
                                     <i class="calendar icon"></i>
-                                    <input type="date" id="rangestartdate" value="2017-11-27">
+                                    <input type="date" id="rangestartdate" value="2017-11-28">
                                 </div>
                             </div>
                         </div>
@@ -93,6 +96,34 @@
                         </div>
                     </div>
                 </div>
+                <h3 style="padding: 10px">Event Span</h3>
+                <div class="ui form">
+                    <div class="field" style="width: 47.5%; margin: 10px">
+                        <label>Duration</label>
+                        <select class="ui search dropdown">
+                            <option value="15">15 min</option>
+                            <option value="30">30 min</option>
+                            <option value="45">45 min</option>
+                            <option value="60">1 h</option>
+                            <option value="75">1 h 15 min</option>
+                            <option value="90">1 h 30 min</option>
+                            <option value="105">1 h 45 min</option>
+                            <option value="120">2 h</option>
+                            <option value="135">2 h 15 min</option>
+                            <option value="150">2 h 30 min</option>
+                            <option value="165">2 h 45 min</option>
+                            <option value="180">3 h</option>
+                            <option value="195">3 h 15 min</option>
+                            <option value="210">3 h 30 min</option>
+                            <option value="225">3 h 45 min</option>
+                            <option value="240">4 h</option>
+                            <option value="255">4 h 15 min</option>
+                            <option value="270">4 h 30 min</option>
+                            <option value="285">4 h 45 min</option>
+                            <option value="300">5 h</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="ui animated button" id="datetime_next"
                      style="position: absolute; left: 215px; bottom: 25px">
                     <div class="visible content">Next</div>
@@ -106,7 +137,7 @@
                     <div class="row" style="position: absolute; top: 15px; left: 15px;">
                         <p>create a new meeting around events in these calendars.</p>
                         {% for cal in g.calendars if cal.selected %}
-                            <div class="col-md-4" style="font-size: 0.75em">
+                            <div class="col-md-4" style="font-size: 1em">
             <span class="input-group-addon baseui" style="background-color: transparent;">
                 <input name="select-calendar" type="checkbox" value="{{ cal }}">
             </span>
@@ -138,17 +169,34 @@
     </div>
 </div>
 <script>
+    // TODO: Allow only time blocks divisible by 15.
     // TODO: Form validations.
-    // TODO: Input for meeting duration.
-    // TODO: Push URLs onto history stack.
-    // TODO: Update date and time range if user clicks back, check if the values changed.
-    // TODO: Enter code to resume.
+    // TODO: Update date and time range, if the values are different.
     // TODO: Going back and reselect calendar(s)
-    // TODO: Provide code/URL for coming back and invitees
+    // TODO: Ability to delete schedule
     $(document).ready(function () {
         let SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
         let SELECT_URL = SCRIPT_ROOT + "/select";
         let SET_RANGE_URL = SCRIPT_ROOT + "/set_range";
+        let CHECK_CODE = SCRIPT_ROOT + "/check_code";
+        // handles session code submissions
+        $("#session_code").keypress(function (event) {
+            if (event.which === 13) {
+                console.log($(this).val());
+                console.log(typeof $(this).val());
+                $.ajax({
+                    url: CHECK_CODE,
+                    data: {session_code: $(this).val()},
+                    success: function (data) {
+                        if (data.result) {
+                            window.location.assign(data.redirect);
+                        } else {
+                            alert("session code not found");
+                        }
+                    }
+                })
+            }
+        });
         // sends the dates and times to the server and redirect the user to get authenticated.
         // server uses the dates and times to fetch for contained events.
         $("#datetime_next").click(function (event) {
@@ -156,19 +204,26 @@
             try {
                 let begin_datetime = moment($('#rangestartdate').val() + " " + $('#rangestarttime').val()).local();
                 let end_datetime = moment($('#rangeenddate').val() + " " + $('#rangeendtime').val()).local();
-                console.log(begin_datetime);
-                console.log(end_datetime);
-                let time_diff = end_datetime.diff(begin_datetime, 'minutes');
-                if (time_diff < 15) {
-                    alert("Time difference must be at minimum 15 minutes.");
+                let time_diff_hour = moment.utc(moment(end_datetime, "DD/MM/YYYY HH:mm:ss").diff(moment(begin_datetime, "DD/MM/YYYY HH:mm:ss"))).hours();
+                let time_diff_minute = moment.utc(moment(end_datetime, "DD/MM/YYYY HH:mm:ss").diff(moment(begin_datetime, "DD/MM/YYYY HH:mm:ss"))).minutes();
+                if (time_diff_minute < 15) {
+                    if (time_diff_hour <= 0) {
+                        alert("Time difference must be at minimum 15 minutes.");
+                        return
+                    }
+                } else if (time_diff_minute % 15 != 0) {
+                    alert("Time difference must be divisible by 15.");
                     return
                 }
+                $('#form-datetime').fadeOut("slow", function () {
+                    $('#form-calendars').fadeIn("slow");
+                });
                 $.ajax({
                     url: SET_RANGE_URL,
                     data: {begin_datetime: begin_datetime.format(), end_datetime: end_datetime.format()},
                     success: function (data) {
                         if (data.redirect) {
-                            window.location.replace(data.redirect)
+                            window.location.assign(data.redirect);
                         }
                     }
                 })
@@ -240,12 +295,10 @@
         // hides the calendar form when page loads
         $('#form-calendars').hide();
         // shows the calendar form when next is clicked inside datetime form
-        $('#datetime_next').click(function (event) {
-            event.preventDefault();
-            $('#form-datetime').fadeOut("slow", function () {
-                $('#form-calendars').fadeIn("slow");
-            })
-        });
+        {#        $('#datetime_next').click(function (event) {#}
+        {#            event.preventDefault();#}
+        {##}
+        {#        });#}
         // shows the datetime form when last is clicked inside calendar form
         $('#calendars_last').click(function (event) {
             event.preventDefault();

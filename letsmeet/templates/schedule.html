@@ -2,111 +2,99 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Let's Meet</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css"
+          href="/static/css/stylesheet.css"
+    />
+    <script rel="script" type="text/javascript"
+            src="/static/js/moment.min.js">
+    </script>
+    <!--An open source UI framework-->
+    <link href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css" rel="stylesheet"
+          type="text/css"/>
+    <link href="https://cdn.rawgit.com/mdehoog/Semantic-UI/6e6d051d47b598ebab05857545f242caf2b4b48c/dist/semantic.min.css"
+          rel="stylesheet" type="text/css"/>
+    <script src="https://code.jquery.com/jquery-2.1.4.js"></script>
+    <script src="https://cdn.rawgit.com/mdehoog/Semantic-UI/6e6d051d47b598ebab05857545f242caf2b4b48c/dist/semantic.min.js"></script>
+
+
 </head>
-<body>
-<p>Fancy seeing you here!</p>
-<h1>Event Name Goes Here</h1>
+<body style="width: 100%; overflow: visible">
+{% if g.event_name %}
+    <h1>Event Name Goes Here</h1>
+{% endif %}
 {% if g.schedule_exists %}
-    <table>
-        {% for i in g.blocks %}
-            {% for key, value in i.items() %}
+    <button class="ui secondary button" id="get_calendars" style="float: right;">
+        Invited? Click here to include your calendar events
+    </button>
+{% endif %}
+{% if g.schedule_exists %}
+    {% for day in g.blocks %}
+        {% for key, value in day.items() %}
+            <table class="ui compact celled definition table">
+                <thead>
                 <tr>
-                    <th>{{ key }}</th>
-                    <td>{{ g.bounds[0] }}</td>
-                    {% for j in value %}
-                        {% for k in j %}
-                            {% for key2, value2 in k.items() %}
-                                {% if key2 == "start" %}
-                                    {% set start = value2['dateTime'] %}
-                                {% endif %}
-                                {% if key2 == "summary" %}
-                                    {% set summary = value2 %}
-                                {% endif %}
-                                {% if key2 == "end" %}
-                                    {% set end = value2['dateTime'] %}
-                                {% endif %}
-                                <td>{{ start | strip_date }}</td>
-                                <td>{{ summary }}</td>
-                                <td>{{ end | strip_date}}</td>
-                            {% endfor %}
-                        {% endfor %}
+                    <th>Prefer</th>
+                    <th>Date</th>
+                    {% for i in value %}
+                        <th>{{ i[0] }}</th>
                     {% endfor %}
-                    <td>{{ g.bounds[1] }}</td>
                 </tr>
-            {% endfor %}
+                </thead>
+                <tbody>
+                <tr>
+                    <td class="collapsing">
+                        <div class="ui fitted slider checkbox">
+                            <input type="checkbox"> <label></label>
+                        </div>
+                    </td>
+                    <td>{{ key }}</td>
+                    {% for i in value %}
+                        {% if not i[1] %}
+                            <td bgcolor="#006400"></td>
+                        {% else %}
+                            <td bgcolor="#000000"></td>
+                        {% endif %}
+                    {% endfor %}
+                </tr>
+
+                </tbody>
+                <tfoot class="full-width">
+                </tfoot>
+            </table>
         {% endfor %}
-    </table>
+    {% endfor %}
 {% else %}
-    <p>Opps the page doesn't exist.</p>
+    <p>Oops the page doesn't exist.</p>
+{% endif %}
+{% if g.token %}
+    <h4>Your schedule session code: {{ g.token }}</h4>
+    <p>Use this code to invite your friends!</p>
 {% endif %}
 
-<script async>
-    {#    let getUrlParameter = function getUrlParameter(sParam) {#}
-    {#        let sPageURL = decodeURIComponent(window.location.search.substring(1)),#}
-    {#            sURLVariables = sPageURL.split('&'),#}
-    {#            sParameterName,#}
-    {#            i;#}
-    {##}
-    {#        for (i = 0; i < sURLVariables.length; i++) {#}
-    {#            sParameterName = sURLVariables[i].split('=');#}
-    {##}
-    {#            if (sParameterName[0] === sParam) {#}
-    {#                return sParameterName[1] === undefined ? true : sParameterName[1];#}
-    {#            }#}
-    {#        }#}
-    {#    };#}
-    {#    let start_t = data.bounds[0];#}
-    {#    let end_t = data.bounds[1];#}
-    {#    let $table = $('<table>');#}
-    {#    for (let i = 0; i < data.blocks.length; i++) {#}
-    {#        for (let key in data.blocks[i]) {#}
-    {#            if (data.blocks[i].hasOwnProperty(key)) {#}
-    {#                if (i === 0) {#}
-    {#                    let begin = moment(key + " " + start_t);#}
-    {#                    start_t = begin.format('HH:mm');#}
-    {#                    let end = moment(key + " " + end_t);#}
-    {#                    end_t = end.format('HH:mm');#}
-    {#                }#}
-    {#                let $tr = $('<tr class="day">');#}
-    {#                $tr.append(#}
-    {#                    $('<th>').text("<" + key + ">: ")#}
-    {#                );#}
-    {#                $tr.append(#}
-    {#                    $('<th>').text(start_t),#}
-    {#                    $('<th>').text("--")#}
-    {#                );#}
-    {#                let events = Object.values(data.blocks[i]);#}
-    {#                for (let n = 0; n < events.length; n++) {#}
-    {#                    console.log("For i=" + i + " " + "events: ");#}
-    {#                    for (let m = 0; m < events[n].length; m++) {#}
-    {#                        let e_summary = null;#}
-    {#                        let e_start = null;#}
-    {#                        let e_end = null;#}
-    {#                        for (let p = 0; p < events[n][m].length; p++) {#}
-    {#                            if ("summary" in events[n][m][p]) {#}
-    {#                                e_summary = events[n][m][p]['summary']#}
-    {#                            } else if ("start" in events[n][m][p]) {#}
-    {#                                e_start = moment(events[n][m][p]['start']['dateTime']).format("hh:mm");#}
-    {#                            } else if ("end" in events[n][m][p]) {#}
-    {#                                e_end = moment(events[n][m][p]['end']['dateTime']).format("hh:mm");#}
-    {#                            }#}
-    {#                        }#}
-    {#                        if (e_start) {#}
-    {#                            $tr.append(#}
-    {#                                $('<th>').text($.trim("--" + e_start + "[" + "(busy)" + e_summary + "]" + e_end + "--"))#}
-    {#                            )#}
-    {#                        }#}
-    {#                    }#}
-    {#                }#}
-    {#                $tr.append(#}
-    {#                    $('<th>').text(end_t)#}
-    {#                );#}
-    {#                $table.append($tr);#}
-    {#            }#}
-    {#        }#}
-    {#    }#}
-    {#    $("#events").append($table);#}
+<script>
+    $(document).ready(function () {
+        let SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+        let SELECT_URL = SCRIPT_ROOT + "/select";
+        let SET_RANGE_URL = SCRIPT_ROOT + "/set_range";
+        let CHECK_CODE = SCRIPT_ROOT + "/check_code";
+        let begin_datetime = '{{ g.begin_datetime }}';
+        let end_datetime = '{{ g.end_datetime }}';
+        $("#get_calendars").click(function (event) {
+            event.preventDefault();
+            $.ajax({
+                url: SET_RANGE_URL,
+                data: {begin_datetime: begin_datetime, end_datetime: end_datetime},
+                success: function (data) {
+                    if (data.redirect) {
+                        window.location.assign(data.redirect);
+                    }
+                }
+            })
+
+        });
+    })
 </script>
 </body>
 </html>

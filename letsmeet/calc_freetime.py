@@ -1,8 +1,6 @@
-from datetime import time
+import datetime
+import copy
 import arrow
-
-# block_bounds = []  # storing only the dates
-# time_blocks = []  # storing dates and their time blocks
 
 
 def get_available_times(events, begin_datetime, end_datetime):
@@ -14,8 +12,6 @@ def get_available_times(events, begin_datetime, end_datetime):
     :return: list of available intervals
     """
     block_bounds, time_blocks = create_available_block(begin_datetime, end_datetime)
-    print(block_bounds)
-    print(time_blocks)
     calc_available_block(events, block_bounds, time_blocks)
     to_string_blocks(time_blocks)
     return to_string_bounds(block_bounds), time_blocks
@@ -23,33 +19,45 @@ def get_available_times(events, begin_datetime, end_datetime):
 
 def create_available_block(begin_datetime, end_datetime):
     """
-    Create a global available time block that can be manipulated.
+    Create a time table for each day.
     :param begin_datetime: str
     :param end_datetime: str
     :return: list, list
     """
+    # initialize variables
     block_bounds = []
     time_blocks = []
+
+    # convert string to arrow objects
     d1 = arrow.get(begin_datetime)
     d2 = arrow.get(end_datetime)
-    day_delta = (d2 - d1).days + 1  # Block multiplier
+    day_delta = (d2 - d1).days + 1
 
-    t1 = d1.time()  # Start time
+    # convert datetime to time
+    t1 = d1.time()
+    t2 = d2.time()
+
     block_bounds.append(t1)
-    t2 = d2.time()  # End time
     block_bounds.append(t2)
 
+    temp_date = arrow.get(end_datetime).shift(days=-(day_delta - 1))
+    time_table = []
+
+    while d1 <= temp_date:
+        time_table.append([d1.time(), False])
+        d1 += datetime.timedelta(minutes=15)
+
+    d1 = arrow.get(begin_datetime)
     for i in range(day_delta):
         date = (d1.shift(days=+i).date())
-        time_block_dict = {date: []}
-
+        time_block_dict = {date: copy.deepcopy(time_table)}
         time_blocks.append(time_block_dict)
     return block_bounds, time_blocks
 
 
 def calc_available_block(events, bounds, blocks):
     """
-    Manipulate the available blocks.
+    Mark each 15 minute as busy/free in the timetable, for each date.
     :param events: A list of events, each is a tuple.
     :param bounds: A list containing times of the starting bound and ending bound.
     :param blocks: An empty list
@@ -63,54 +71,76 @@ def calc_available_block(events, bounds, blocks):
         day_delta = (end_date - start_date).days
         if day_delta == 0:  # same day event.
             if start_time < bounds[0] and end_time <= bounds[0]:  # event begins and ends before block.
-                # print("{event} happens before".format(event=event[1]['summary']))
                 continue
-            elif start_time >= bounds[1]:  # event begins after after.
+            elif start_time >= bounds[1]:  # event begins after block ends.
                 continue
             else:
-                # print("{event} happens in between".format(event=event[1]['summary']))
-                for d in blocks:
-                    if start_date in d:
-                        d[start_date].append(event)
+                if start_time <= bounds[0]:  # event begins at or before beginning of block
+                    for d in blocks:
+                        if start_date in d:
+                            for t in d[start_date]:
+                                if t[0] <= end_time:
+                                    t[1] = True
+                elif end_time >= bounds[1]:  # event ends at or after end of block
+                    for d in blocks:
+                        if start_date in d:
+                            for t in d[start_date]:
+                                if t[0] >= start_time:
+                                    t[1] = True
+                else:  # event is well bounded by block
+                    for d in blocks:
+                        if start_date in d:
+                            for t in d[start_date]:
+                                if start_time <= t[0] <= end_time:
+                                    t[1] = True
         elif day_delta == 1:  # two day event.
             for i in range(2):
-                if i == 0:
-                    if start_time >= bounds[1]:  # check for first day.
+                if i == 0:  # check for first day.
+                    if start_time >= bounds[1]:  # If starts after block.
                         continue
-                    else:
+                    else:  # Starts before block ends.
                         for d in blocks:
                             if start_date in d:
-                                d[start_date].append(event)
-                else:
-                    if end_time <= bounds[0]:  # check for second day.
+                                for t in d[start_date]:
+                                    if t[0] >= start_time:
+                                        t[1] = True
+                else:  # check for second day.
+                    if end_time <= bounds[0]:  # Ends before second day's block begins.
                         continue
-                    else:
+                    else:  # Ends after second day's blocks begins.
                         for d in blocks:
                             if end_date in d:
-                                d[end_date].append(event)
+                                for t in d[end_date]:
+                                    if t[0] <= end_time:
+                                        t[1] = True
         else:  # multi-day (more than two) event.
             full_days = []  # days between first and last.
             for i in range(1, day_delta):
                 full_days.append(arrow.get(event[2]['start']['dateTime']).shift(days=+i).date())
-            for i in range(len(full_days)):
+            for i in range(len(full_days)):  # fill busy for entire block(s) for days between
                 for d in blocks:
                     if full_days[i] in d:
-                        d[full_days[i]].append(event)
-            for i in range(2):
+                        for t in d[full_days[i]]:
+                            t[1] = True
+            for i in range(2):  # handle first and last days
                 if i == 0:
                     if start_time >= bounds[1]:  # check for first day.
                         continue
                     else:
                         for d in blocks:
                             if start_date in d:
-                                d[start_date].append(event)
+                                for t in d[start_date]:
+                                    if t[0] >= start_time:
+                                        t[1] = True
                 else:
                     if end_time <= bounds[0]:  # check for last day.
                         continue
                     else:
                         for d in blocks:
                             if end_date in d:
-                                d[end_date].append(event)
+                                for t in d[end_date]:
+                                    if t[0] <= end_time:
+                                        t[1] = True
 
 
 def to_string_bounds(bounds):
@@ -127,3 +157,8 @@ def to_string_blocks(blocks):
             nk = key.strftime('%Y-%m-%d')
             d[nk] = d.pop(key)
             break
+
+    for d in blocks:
+        for key in d:
+            for n in d[key]:
+                n[0] = n[0].strftime('%H:%M')
