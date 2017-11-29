@@ -21,16 +21,16 @@
 
 </head>
 <body style="width: 100%; overflow: visible">
-{% if g.event_name %}
+{% if session.event_name %}
     <h1>Event Name Goes Here</h1>
 {% endif %}
-{% if g.schedule_exists %}
+{% if session.schedule_exists %}
     <button class="ui secondary button" id="get_calendars" style="float: right;">
         Invited? Click here to include your calendar events
     </button>
 {% endif %}
-{% if g.schedule_exists %}
-    {% for day in g.blocks %}
+{% if session.schedule_exists %}
+    {% for day in session.blocks %}
         {% for key, value in day.items() %}
             <table class="ui compact celled definition table">
                 <thead>
@@ -58,7 +58,6 @@
                         {% endif %}
                     {% endfor %}
                 </tr>
-
                 </tbody>
                 <tfoot class="full-width">
                 </tfoot>
@@ -68,19 +67,20 @@
 {% else %}
     <p>Oops the page doesn't exist.</p>
 {% endif %}
-{% if g.token %}
+{% if session.token %}
     <h4>Your schedule session code: {{ g.token }}</h4>
     <p>Use this code to invite your friends!</p>
 {% endif %}
 
 <script>
+    // Session code has been verified.
+    // User can append new events to the table
     $(document).ready(function () {
         let SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
         let SELECT_URL = SCRIPT_ROOT + "/select";
         let SET_RANGE_URL = SCRIPT_ROOT + "/set_range";
-        let CHECK_CODE = SCRIPT_ROOT + "/check_code";
-        let begin_datetime = '{{ g.begin_datetime }}';
-        let end_datetime = '{{ g.end_datetime }}';
+        let begin_datetime = '{{ session.schedule_b_datetime }}';
+        let end_datetime = '{{ session.schedule_e_datetime }}';
         $("#get_calendars").click(function (event) {
             event.preventDefault();
             $.ajax({

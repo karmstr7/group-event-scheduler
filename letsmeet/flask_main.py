@@ -1,4 +1,5 @@
 import flask
+from bson import ObjectId
 from flask import g
 from flask import render_template
 from flask import request
@@ -12,6 +13,8 @@ import sys
 
 # Freetime module
 from calc_freetime import get_available_times
+# Merge schedules module
+from merge_events import merge_main
 
 # Date handling 
 import arrow  # Replacement for datetime, based on moment.js
@@ -26,7 +29,6 @@ from apiclient import discovery
 
 # Mongo for database
 from pymongo import MongoClient
-
 
 ###
 # Globals
@@ -80,6 +82,15 @@ APPLICATION_NAME = 'MeetMe class project'
 @app.route("/")
 @app.route("/index")
 def index():
+    # Invalidate these session variables if user wants to create new meeting.
+    flask.session['schedule_exists'] = False
+    flask.session['bounds'] = None
+    flask.session['blocks'] = None
+    flask.session['schedule_begin_datetime'] = None
+    flask.session['schedule_end_datetime'] = None
+    flask.session['token'] = None
+    flask.session['event_name'] = None
+    flask.session['_id'] = None
     return render_template('index.html')
 
 
@@ -115,22 +126,17 @@ def schedule(token):
     Generates the schedule page.
     """
     app.logger.debug("Rendering schedule(s)")
-    g.schedule_exists = False
-    g.bounds = None
-    g.blocks = None
-    g.begin_datetime = None
-    g.end_datetime = None
-    g.token = None
-    g.event_name = None
     for record in collection.find({"type": "schedule_options"}):
         if record['token'] == token:
-            g.schedule_exists = True
-            g.bounds = record['bounds']
-            g.blocks = record['blocks']
-            g.begin_datetime = record['begin_datetime']
-            g.end_datetime = record['end_datetime']
-            g.token = token
+            flask.session['schedule_exists'] = True
+            flask.session['bounds'] = record['bounds']
+            flask.session['blocks'] = record['blocks']
+            flask.session['schedule_begin_datetime'] = record['begin_datetime']
+            flask.session['schedule_end_datetime'] = record['end_datetime']
+            flask.session['token'] = token
+            flask.session['_id'] = str(record.get('_id'))
     return render_template('schedule.html')
+
 
 ####
 #
@@ -322,6 +328,11 @@ def select():
     :return: A list of events impeding with the meeting time.
     """
     app.logger.debug("ENTERING SELECT")
+    # Force begin and end times to be the same as the schedule.
+    if flask.session['schedule_begin_datetime'] and flask.session['schedule_end_datetime']:
+        flask.session['begin_datetime'] = flask.session['schedule_begin_datetime']
+        flask.session['end_datetime'] = flask.session['schedule_end_datetime']
+
     calendars = request.args.get('calendars', type=str)
     print("calendars: {}".format(calendars))
     credentials = valid_credentials()
@@ -333,18 +344,24 @@ def select():
     bounds, blocks = get_available_times(got_events,
                                          flask.session['begin_datetime'],
                                          flask.session['end_datetime'])
-    # TODO: Catch bad bounds, blocks, before write to database
-    # TODO: need to check if new schedule or appending to an existing
-    # TODO: pass the variable in the redirect
-    token = make_token()
-    app.logger.debug("bounds: {} schedules: {}".format(bounds, blocks))
-    collection.insert_one({'type': 'schedule_options',
-                           'token': token,
-                           'bounds': bounds,
-                           'blocks': blocks,
-                           'begin_datetime': flask.session['begin_datetime'],
-                           'end_datetime': flask.session['end_datetime']})
-    return flask.jsonify(redirect="/schedule/token=", token=token)
+    if flask.session['token']:  # Check if user want's to append to existing schedule.
+        updated_blocks = merge_main(master_schedule=flask.session['blocks'], new_schedule=blocks)
+        collection.update_one(
+            {'_id': ObjectId(flask.session['_id'])},
+            {"$set": {
+                "blocks": updated_blocks
+            }}
+        )
+        return flask.jsonify(redirect="/schedule/token=", token=flask.session['token'])
+    else:  # The user want's to create new schedule.
+        token = make_token()
+        collection.insert_one({'type': 'schedule_options',
+                               'token': token,
+                               'bounds': bounds,
+                               'blocks': blocks,
+                               'begin_datetime': flask.session['begin_datetime'],
+                               'end_datetime': flask.session['end_datetime']})
+        return flask.jsonify(redirect="/schedule/token=", token=token)
 
 
 #################

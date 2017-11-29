@@ -143,22 +143,17 @@
             </span>
                                 {{ cal.summary }}
                             </div>
-                            {% if loop.index is divisibleby 3 %}
-                                </div>
-                                <div class="row">
-                            {% endif %}
                         {% endfor %}
-                        </div>
                 {% endif %}
                 <div class="ui animated button" id="calendars_last"
-                     style="position: absolute; left: 150px; bottom: 25px">
+                     style="position: absolute; left: 150px; bottom: -325px">
                     <div class="visible content">Last</div>
                     <div class="hidden content">
                         <i class="left arrow icon"></i>
                     </div>
                 </div>
                 <div class="ui animated button" id="calendars_next"
-                     style="position: absolute; left: 280px; bottom: 25px">
+                     style="position: absolute; left: 280px; bottom: -325px">
                     <div class="visible content">Next</div>
                     <div class="hidden content">
                         <i class="right arrow icon"></i>
@@ -169,11 +164,10 @@
     </div>
 </div>
 <script>
-    // TODO: Allow only time blocks divisible by 15.
-    // TODO: Form validations.
     // TODO: Update date and time range, if the values are different.
-    // TODO: Going back and reselect calendar(s)
     // TODO: Ability to delete schedule
+    // TODO: Implement a hard reset button so user can create new schedule.
+    // TODO: Build user-side manipulation capabilities for the table?
     $(document).ready(function () {
         let SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
         let SELECT_URL = SCRIPT_ROOT + "/select";
