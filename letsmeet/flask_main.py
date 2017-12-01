@@ -344,7 +344,7 @@ def select():
     bounds, blocks = get_available_times(got_events,
                                          flask.session['begin_datetime'],
                                          flask.session['end_datetime'])
-    if flask.session['token']:  # Check if user want's to append to existing schedule.
+    if flask.session['token']:  # Check if user wants to append to existing schedule.
         updated_blocks = merge_main(master_schedule=flask.session['blocks'], new_schedule=blocks)
         collection.update_one(
             {'_id': ObjectId(flask.session['_id'])},
@@ -353,7 +353,7 @@ def select():
             }}
         )
         return flask.jsonify(redirect="/schedule/token=", token=flask.session['token'])
-    else:  # The user want's to create new schedule.
+    else:  # The user wants to create new schedule.
         token = make_token()
         collection.insert_one({'type': 'schedule_options',
                                'token': token,
@@ -405,7 +405,7 @@ def get_events(calendars, service):
 def strip_date(date):
     """
     Takes a date object and returns a string representation of the time
-    in the object.
+    of the object.
     """
     try:
         d = arrow.get(date).format("HH:mm")
@@ -421,6 +421,19 @@ def make_token():
     """
     token = str(uuid.uuid4())
     return token
+
+
+@app.route('/reset_session')
+def reset_session():
+    flask.session['schedule_exists'] = False
+    flask.session['bounds'] = None
+    flask.session['blocks'] = None
+    flask.session['schedule_begin_datetime'] = None
+    flask.session['schedule_end_datetime'] = None
+    flask.session['token'] = None
+    flask.session['event_name'] = None
+    flask.session['_id'] = None
+    return flask.jsonify("random")
 
 
 if __name__ == "__main__":

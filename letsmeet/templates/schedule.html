@@ -68,10 +68,9 @@
     <p>Oops the page doesn't exist.</p>
 {% endif %}
 {% if session.token %}
-    <h4>Your schedule session code: {{ g.token }}</h4>
+    <h4>Your schedule session code: {{ session.token }}</h4>
     <p>Use this code to invite your friends!</p>
 {% endif %}
-
 <script>
     // Session code has been verified.
     // User can append new events to the table

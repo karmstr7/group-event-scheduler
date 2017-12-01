@@ -135,172 +135,178 @@
             <div class="form-calendars" id="form-calendars">
                 {% if g.calendars is defined %}
                     <div class="row" style="position: absolute; top: 15px; left: 15px;">
-                        <p>create a new meeting around events in these calendars.</p>
-                        {% for cal in g.calendars if cal.selected %}
-                            <div class="col-md-4" style="font-size: 1em">
+                    <p>create a new meeting around events in these calendars.</p>
+                    {% for cal in g.calendars if cal.selected %}
+                        <div class="col-md-4" style="font-size: 1em">
             <span class="input-group-addon baseui" style="background-color: transparent;">
                 <input name="select-calendar" type="checkbox" value="{{ cal }}">
             </span>
-                                {{ cal.summary }}
-                            </div>
-                        {% endfor %}
+                            {{ cal.summary }}
+                        </div>
+                    {% endfor %}
                 {% endif %}
                 <div class="ui animated button" id="calendars_last"
-                     style="position: absolute; left: 150px; bottom: -325px">
+                     style="position: absolute; left: 150px; bottom: -365px">
                     <div class="visible content">Last</div>
                     <div class="hidden content">
                         <i class="left arrow icon"></i>
                     </div>
                 </div>
                 <div class="ui animated button" id="calendars_next"
-                     style="position: absolute; left: 280px; bottom: -325px">
+                     style="position: absolute; left: 280px; bottom: -365px">
                     <div class="visible content">Next</div>
                     <div class="hidden content">
                         <i class="right arrow icon"></i>
                     </div>
                 </div>
+                <div class="negative ui button" id="reset_forms"
+                     style="position: absolute; left: 400px; bottom: -365px">
+                    <div class="visible content">Reset</div>
+                </div>
+                </div>
             </div>
         </div>
     </div>
-</div>
-<script>
-    // TODO: Update date and time range, if the values are different.
-    // TODO: Ability to delete schedule
-    // TODO: Implement a hard reset button so user can create new schedule.
-    // TODO: Build user-side manipulation capabilities for the table?
-    $(document).ready(function () {
-        let SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
-        let SELECT_URL = SCRIPT_ROOT + "/select";
-        let SET_RANGE_URL = SCRIPT_ROOT + "/set_range";
-        let CHECK_CODE = SCRIPT_ROOT + "/check_code";
-        // handles session code submissions
-        $("#session_code").keypress(function (event) {
-            if (event.which === 13) {
-                console.log($(this).val());
-                console.log(typeof $(this).val());
-                $.ajax({
-                    url: CHECK_CODE,
-                    data: {session_code: $(this).val()},
-                    success: function (data) {
-                        if (data.result) {
-                            window.location.assign(data.redirect);
-                        } else {
-                            alert("session code not found");
+    <script>
+        $(document).ready(function () {
+            let SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+            let SELECT_URL = SCRIPT_ROOT + "/select";
+            let SET_RANGE_URL = SCRIPT_ROOT + "/set_range";
+            let RESET_SESSION_RUL = SCRIPT_ROOT + "/reset_session";
+            let CHECK_CODE = SCRIPT_ROOT + "/check_code";
+            // handles session code submissions
+            $("#session_code").keypress(function (event) {
+                if (event.which === 13) {
+                    console.log($(this).val());
+                    console.log(typeof $(this).val());
+                    $.ajax({
+                        url: CHECK_CODE,
+                        data: {session_code: $(this).val()},
+                        success: function (data) {
+                            if (data.result) {
+                                window.location.assign(data.redirect);
+                            } else {
+                                alert("session code not found");
+                            }
                         }
-                    }
-                })
-            }
-        });
-        // sends the dates and times to the server and redirect the user to get authenticated.
-        // server uses the dates and times to fetch for contained events.
-        $("#datetime_next").click(function (event) {
-            event.preventDefault();
-            try {
-                let begin_datetime = moment($('#rangestartdate').val() + " " + $('#rangestarttime').val()).local();
-                let end_datetime = moment($('#rangeenddate').val() + " " + $('#rangeendtime').val()).local();
-                let time_diff_hour = moment.utc(moment(end_datetime, "DD/MM/YYYY HH:mm:ss").diff(moment(begin_datetime, "DD/MM/YYYY HH:mm:ss"))).hours();
-                let time_diff_minute = moment.utc(moment(end_datetime, "DD/MM/YYYY HH:mm:ss").diff(moment(begin_datetime, "DD/MM/YYYY HH:mm:ss"))).minutes();
-                if (time_diff_minute < 15) {
-                    if (time_diff_hour <= 0) {
-                        alert("Time difference must be at minimum 15 minutes.");
+                    })
+                }
+            });
+            // sends the dates and times to the server and redirect the user to get authenticated.
+            // server uses the dates and times to fetch for contained events.
+            $("#datetime_next").click(function (event) {
+                event.preventDefault();
+                try {
+                    let begin_datetime = moment($('#rangestartdate').val() + " " + $('#rangestarttime').val()).local();
+                    let end_datetime = moment($('#rangeenddate').val() + " " + $('#rangeendtime').val()).local();
+                    let time_diff_hour = moment.utc(moment(end_datetime, "DD/MM/YYYY HH:mm:ss").diff(moment(begin_datetime, "DD/MM/YYYY HH:mm:ss"))).hours();
+                    let time_diff_minute = moment.utc(moment(end_datetime, "DD/MM/YYYY HH:mm:ss").diff(moment(begin_datetime, "DD/MM/YYYY HH:mm:ss"))).minutes();
+                    if (time_diff_minute < 15) {
+                        if (time_diff_hour <= 0) {
+                            alert("Time difference must be at minimum 15 minutes.");
+                            return
+                        }
+                    } else if (time_diff_minute % 15 != 0) {
+                        alert("Time difference must be divisible by 15.");
                         return
                     }
-                } else if (time_diff_minute % 15 != 0) {
-                    alert("Time difference must be divisible by 15.");
+                    $('#form-datetime').fadeOut("slow", function () {
+                        $('#form-calendars').fadeIn("slow");
+                    });
+                    $.ajax({
+                        url: SET_RANGE_URL,
+                        data: {begin_datetime: begin_datetime.format(), end_datetime: end_datetime.format()},
+                        success: function (data) {
+                            if (data.redirect) {
+                                window.location.assign(data.redirect);
+                            }
+                        }
+                    })
+                }
+                catch (err) {
+                    alert(err);
+                }
+            });
+            // this keeps track of the selected calendars
+            let checked_set = new Set([]);
+            $(".col-md-4 :checkbox").change(
+                function () {
+                    if (this.checked) {
+                        checked_set.add($(this).val());
+                    } else {
+                        checked_set.delete($(this).val());
+                    }
+                });
+            // this sends the selected calendars to the server
+            $("#calendars_next").click(function (event) {
+                event.preventDefault();
+                if (checked_set.size === 0) {
                     return
                 }
-                $('#form-datetime').fadeOut("slow", function () {
-                    $('#form-calendars').fadeIn("slow");
-                });
+                let set_to_list = [];
+                for (let it = checked_set.values(), val = null; val = it.next().value;) {
+                    set_to_list.push(val);
+                }
                 $.ajax({
-                    url: SET_RANGE_URL,
-                    data: {begin_datetime: begin_datetime.format(), end_datetime: end_datetime.format()},
+                    url: SELECT_URL,
+                    data: {calendars: JSON.stringify(set_to_list)},
                     success: function (data) {
-                        if (data.redirect) {
-                            window.location.assign(data.redirect);
-                        }
+                        window.location.assign(data.redirect + data.token)
                     }
                 })
-            }
-            catch (err) {
-                alert(err);
-            }
-        });
-        // this keeps track of the selected calendars
-        let checked_set = new Set([]);
-        $(".col-md-4 :checkbox").change(
-            function () {
-                if (this.checked) {
-                    checked_set.add($(this).val());
-                } else {
-                    checked_set.delete($(this).val());
-                }
             });
-        // this sends the selected calendars to the server
-        $("#calendars_next").click(function (event) {
-            event.preventDefault();
-            if (checked_set.size === 0) {
-                return
-            }
-            let set_to_list = [];
-            for (let it = checked_set.values(), val = null; val = it.next().value;) {
-                set_to_list.push(val);
-            }
-            $.ajax({
-                url: SELECT_URL,
-                data: {calendars: JSON.stringify(set_to_list)},
-                success: function (data) {
-                    window.location.replace(data.redirect + data.token)
-                }
-            })
-        });
-        // Jump to form if button is clicked...
-        $(function () {
-            $('a[href*=#]').on('click', function (e) {
-                e.preventDefault();
-                $(this).animate({
-                    'opacity': '1'
+            // Reset session variables.
+            $("#reset_forms").click(function (event) {
+                event.preventDefault();
+                $.ajax({
+                    url: RESET_SESSION_RUL,
+                    success: function () {
+                        window.location.assign("/")
+                    }
+                })
+            });
+            // Jump to form if button is clicked...
+            $(function () {
+                $('a[href*=#]').on('click', function (e) {
+                    e.preventDefault();
+                    $(this).animate({
+                        'opacity': '1'
+                    });
+                    $('html, body').animate({scrollTop: $($(this).attr('href')).offset().top}, 1200, 'linear');
                 });
-                $('html, body').animate({scrollTop: $($(this).attr('href')).offset().top}, 1200, 'linear');
             });
-        });
-        // Taken from http://jsfiddle.net/e5qaD/1151/
-        $(window).on('scroll');
-        let status = [];
-        //Every time the window is scrolled...
-        $(window).scroll(function () {
-            /* Check the location of each desired element */
-            $('.hideme').each(function (i, el) {
-                if (status[i] !== 'showing') { // Makes sure that we haven't already done this item
-                    let bottom_of_object = $(this).position().top + $(this).outerHeight();
-                    let bottom_of_window = $(window).scrollTop() + $(window).height();
-                    /* If the object is completely visible in the window, fade it it */
-                    if (bottom_of_window > bottom_of_object) {
-                        $(this).animate({'opacity': '1'}, 1200);
-                        status[i] = 'showing';
-                        if ($('.hideme').index($(this)) + 1 === $('.hideme').length) {
-                            // We've shown them all, stop listening for scroll events!!!
-                            $(window).off('scroll');
+            // Taken from http://jsfiddle.net/e5qaD/1151/
+            $(window).on('scroll');
+            let status = [];
+            //Every time the window is scrolled...
+            $(window).scroll(function () {
+                /* Check the location of each desired element */
+                $('.hideme').each(function (i, el) {
+                    if (status[i] !== 'showing') { // Makes sure that we haven't already done this item
+                        let bottom_of_object = $(this).position().top + $(this).outerHeight();
+                        let bottom_of_window = $(window).scrollTop() + $(window).height();
+                        /* If the object is completely visible in the window, fade it it */
+                        if (bottom_of_window > bottom_of_object) {
+                            $(this).animate({'opacity': '1'}, 1200);
+                            status[i] = 'showing';
+                            if ($('.hideme').index($(this)) + 1 === $('.hideme').length) {
+                                // We've shown them all, stop listening for scroll events!!!
+                                $(window).off('scroll');
+                            }
                         }
                     }
-                }
+                });
+            });
+            // hides the calendar form when page loads
+            $('#form-calendars').hide();
+            // shows the datetime form when last is clicked inside calendar form
+            $('#calendars_last').click(function (event) {
+                event.preventDefault();
+                $('#form-calendars').fadeOut("slow", function () {
+                    $('#form-datetime').fadeIn("slow");
+                })
             });
         });
-        // hides the calendar form when page loads
-        $('#form-calendars').hide();
-        // shows the calendar form when next is clicked inside datetime form
-        {#        $('#datetime_next').click(function (event) {#}
-        {#            event.preventDefault();#}
-        {##}
-        {#        });#}
-        // shows the datetime form when last is clicked inside calendar form
-        $('#calendars_last').click(function (event) {
-            event.preventDefault();
-            $('#form-calendars').fadeOut("slow", function () {
-                $('#form-datetime').fadeIn("slow");
-            })
-        });
-    });
-</script>
+    </script>
 </body>
 </html>
