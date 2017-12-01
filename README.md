@@ -24,8 +24,7 @@ choices to decide the perfect time, or not, for the meeting.
     5. DB_USER_PW
     6. DB_HOST
     7. DB_PORT
-    8. DB 
-    DB_USER = karmstr7
+    8. DB
 - Then, enter 'make install' under the main directory to install virtual environment
 - Enter 'make start' to start the server
 - Enter 'make stop' to stop the server from running
