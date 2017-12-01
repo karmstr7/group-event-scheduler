@@ -11,7 +11,7 @@ Wish no more, with this web app you won't headache over all the complicated calc
  the app will do all the work for you!
 - How does it work, exactly?
 - Event Scheduler uses Google Calendar API to simulate a time table, which means it pulls calendar events 
-from your friends' Google Calendar, to estimate the availability times. Once everyone you want has participated and 
+from your friends' Google calendars, to estimate the availability times. Once everyone you want has participated and 
 the calculations are done, you will be give a list of 
 choices to decide the perfect time, or not, for the meeting.
 
