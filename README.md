@@ -10,7 +10,7 @@ By leveraging the ubiquitous use of Google Calendar, scheduling group hangouts h
 #### How to use
 Begin by clicking the "Schedule a Meeting" button to provide either - the username and password of your Google account
        - or the username of another Google user 
-to allow the app's access to Google Calendar contents. The app only stores the begin and end times of a user's events in their calendar, it does not store anything else beyond the time intervals. Then, a pop-up will appear to ask you to confirm granting permission, or signal to wait for permission to be granted. Multiple calendars from any number of Google accounts can be added, at anytime. Once a schedule has been created, it is stored in the database and it is linked to a session ID. Others may access the unique schedule by using its session ID.       
+to allow the app's access to Google Calendar contents. The app only stores the begin and end times of a calendar event, it does not store any other data beyond the time intervals. A pop-up will appear to ask you to confirm granting permission, or signal to wait for permission to be granted. Multiple calendars of any number of Google accounts can be added, at anytime. Once a schedule has been created, it is stored in the database and it is linked to a session ID. Others may access the unique schedule by using its session ID.       
 
 #### Technical stack
 - Languages: Python, MongoDB, JavaScript, HTML, CSS, make
